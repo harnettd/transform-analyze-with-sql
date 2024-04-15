@@ -109,7 +109,7 @@ create table sales_by_sku (
 
 ```
 
-Then, importing data was done using pgAdmin4. Once all data was successfully imported, the number of rows imported per table was determined with
+Importing data was done using pgAdmin4. Once all data was successfully imported, the number of rows imported per table was determined with
 
 ```sql
 /* Count the number of rows in each table of the ecommerce database. */
@@ -135,7 +135,7 @@ pg_dump -d ecommerce -F tar -f ecommerce-text.tar
 
 ### Setting Data Types
 
-#### all_sessions
+#### The all_sessions Table
 
 - All entries of the columns transactions, pageviews, sessionqualitydim, productquantity, ecommerceaction_type, and ecommerceaction_step are either `null` or strings of digits. This was determined with a query like
 
@@ -146,9 +146,10 @@ where transactions is not null
 and transactions not similar to '[0-9]*';
 
 ```
-    which returned a count of 0. As such, each of these columns was cast as `integer`.
 
-- All entries of the columns totaltransactionrevenue, productprice, productrevenue, and transactionrevenue are also either `null` or strings of digits. However, I assume that these columns contain monetary values. As such, I casted them as `numeric` rather than `integer`.
+which returned a count of 0. As such, each of these columns was cast as `integer`. (Note that this sort of query is performed repeatedly in what follows. In such cases, I don't include the SQL code again.)
+
+- All entries of the columns totaltransactionrevenue, productprice, productrevenue, and transactionrevenue are also either `null` or strings of digits. However, I assumed that these columns contain monetary values. As such, I casted them as `numeric` rather than `integer`.
 
 - Every entry in the date column is an eight-digit string as can be verifed with the query
 
@@ -158,7 +159,7 @@ from all_sessions
 where date not similar to '[0-9]{8}';
 ```
 
-    which returns a value of 0. Therefore, I cast the date column as `date`, assuming that the format for each entry was 'YYYYMMDD'.
+which returns a value of 0. Therefore, I cast the date column as `date`, assuming that the format for each entry was 'YYYYMMDD'. (Note that this type of query is used again in what follows. In such cases, I don't include the SQL code again.)
 
 - All entries in the productrefundamount, itemquantity, itemrevenue, and searchkeyword columns are `null` as can be veried with something like the query
 
@@ -168,9 +169,9 @@ from all_sessions
 where productrefundamount is not null;
 ```
 
-    which gives 0. Therefore, I dropped these columns.
+which gives 0. Therefore, for the time being, I left these columns typed as `text`. (Note that this type of query is used repeatedly in what follows. In such cases, I don't include the SQL code again.)
 
-- All entries of the time column are either `null` or a strings of digits. Ideally, I would like to cast this column as `time`; however, I can't because it's not clear what the digits mean. There are three-, four-, and five-digit entries as well as many '0's. Without more information, I think it's best to leave this column as `text`. 
+- All entries of the time column are either `null` or a string of digits. Ideally, I would like to cast this column as `time`; however, I can't because it's not clear what the digits mean. There are three-, four-, and five-digit entries as well as many '0's. Without more information, I think it's best to leave this column as `text`. 
 
 - Similarly, all entries of the timeonsite column are either `null` or a string of digits. Ideally, I would like to cast this column as `interval`; However, it's not clear what the unit of measurement is: seconds, minutes, something else? Again, without more information, I think it's best to leave this column as `text`.
 
@@ -195,16 +196,9 @@ alter table if exists all_sessions
 	alter column transactionrevenue type numeric using transactionrevenue::numeric,
 	
 	alter column date type date using to_date(date, 'YYYYMMDD');
-
-/* Drop empty columns. */
-alter table if exists all_sessions
-	drop column productrefundamount,
-	drop column itemquantity,
-	drop column itemrevenue,
-	drop column searchkeyword;
 ```
 
-#### analytics
+#### The analytics Table
 
 - All entries of the columns visitnumber, pageviews, bounces, are either `null` or strings of digits. Therefore, I set the data type of these columns as `integer`.
 
@@ -216,9 +210,9 @@ alter table if exists all_sessions
 
 - All entries in the userid column are `null`, so we leave the column's type as `text`.
 
-- All entries of the column timeonsite are either `null` or strings of digits. I would like to cast these entries as `interval`, but I don't know what the units of time should be. AS such, I left this column as `text`.
+- All entries of the column timeonsite are either `null` or strings of digits. I would like to cast these entries as `interval`, but I don't know what the units of time should be. As such, I left this column as `text`.
 
-- All entries of the columns revenue and unit_price are either `null` or strings of digits. Rather than type these coolumns as `integer`; however, I typed them as `numeric` as they appear to containmonetary values. 
+- All entries of the columns revenue and unit_price are either `null` or strings of digits. Rather than type these columns as `integer`, however, I typed them as `numeric` as they appear to contain monetary values. 
 
 All columns not explicitly mentioned above were left as `text`. The above alterations were implemented with
 
@@ -236,7 +230,7 @@ alter table if exists analytics
 	alter column date type date using to_date(date, 'YYYYMMDD');
 ```
 
-#### products
+#### The products Table
 
 - All entries of the columns orderedquantity, stocklevel, restockingleadtime are either `null` or strings of digits. As such, I typed all of these columns as `integer`.
 
@@ -249,9 +243,9 @@ where sentimentscore is not null
 and sentimentscore not similar to '-?[0-9]*.[0-9]*';
 ```
 
-for example, which yields zero. This, I typed these two columns as `real`.
+for example, which yields zero. Tus, I typed these two columns as `real`. (This type of query is used again below. In such cases, I omit the SQL code.)
 
- All columns not explicitly discussed above were left as `text`. The indicated alterations were implemented with
+All columns not explicitly discussed above were left as `text`. The indicated alterations were implemented with
 
  ```sql
  /* Set column data types. */
@@ -264,7 +258,7 @@ alter table if exists products
 	alter column sentimentmagnitude type real using sentimentmagnitude::real;
  ```
 
- #### sales_by_sku
+ #### The sales_by_sku Table
 
 - I left the productsku column as `text`.
 
@@ -275,7 +269,7 @@ alter table if exists sales_by_sku
 	alter column total_ordered type integer using total_ordered::integer;
 ```
 
-#### sales_report
+#### The sales_report Table
 
 - All entries of the columns total_ordered, stocklevel, and restockingleadtime are either `null` or strings of integers. As such,  typed these columns as `integer`.
 
