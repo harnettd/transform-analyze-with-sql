@@ -263,4 +263,14 @@ alter table if exists products
 	alter column sentimentscore type real using sentimentscore::real,
 	alter column sentimentmagnitude type real using sentimentmagnitude::real;
  ```
- 
+
+ #### sales_by_sku
+
+- I left the productsku column as `text`.
+
+- All entries of the total_ordered column are either `null` or a string of digits. As such, I set the type of this column to `integer` with
+
+```sql
+alter table if exists sales_by_sku
+	alter column total_ordered type integer using total_ordered::integer;
+```
