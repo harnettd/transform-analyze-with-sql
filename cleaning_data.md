@@ -274,3 +274,24 @@ alter table if exists products
 alter table if exists sales_by_sku
 	alter column total_ordered type integer using total_ordered::integer;
 ```
+
+#### sales_report
+
+- All entries of the columns total_ordered, stocklevel, and restockingleadtime are either `null` or strings of integers. As such,  typed these columns as `integer`.
+
+- All entries of the columns sentimentscore, sentimentmagnitude, and ratio appear to be string representations of real numbers. As such, I typed these columns as `real`.
+
+Any column not mentioned above was left as `text`. The type changes dscribed above were implemented with
+
+```sql
+/* Set column data types. */
+alter table if exists sales_report
+	alter column total_ordered type integer using total_ordered::integer,
+	alter column stocklevel type integer using stocklevel::integer,
+	alter column restockingleadtime type integer using restockingleadtime::integer,
+	
+	alter column sentimentscore type real using sentimentscore::real,
+	alter column sentimentmagnitude type real using sentimentmagnitude::real,
+	alter column ratio type real using ratio::real;
+```
+
