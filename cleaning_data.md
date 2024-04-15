@@ -235,3 +235,32 @@ alter table if exists analytics
 	
 	alter column date type date using to_date(date, 'YYYYMMDD');
 ```
+
+#### products
+
+- All entries of the columns orderedquantity, stocklevel, restockingleadtime are either `null` or strings of digits. As such, I typed all of these columns as `integer`.
+
+- All entries of the columns sentimentscore and sentimentscoremagnitude appear to resemble real numbers as can be deduced from the query
+
+```sql
+select count(*)
+from products
+where sentimentscore is not null
+and sentimentscore not similar to '-?[0-9]*.[0-9]*';
+```
+
+for example, which yields zero. This, I typed these two columns as `real`.
+
+ All columns not explicitly discussed above were left as `text`. The indicated alterations were implemented with
+
+ ```sql
+ /* Set column data types. */
+alter table if exists products
+	alter column orderedquantity type integer using orderedquantity::integer,
+	alter column stocklevel type integer using stocklevel::integer,
+	alter column restockingleadtime type integer using restockingleadtime::integer,
+	
+	alter column sentimentscore type real using sentimentscore::real,
+	alter column sentimentmagnitude type real using sentimentmagnitude::real;
+ ```
+ 
