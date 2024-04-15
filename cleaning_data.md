@@ -203,3 +203,35 @@ alter table if exists all_sessions
 	drop column itemrevenue,
 	drop column searchkeyword;
 ```
+
+#### analytics
+
+- All entries of the columns visitnumber, pageviews, bounces, are either `null` or strings of digits. Therefore, I set the data type of these columns as `integer`.
+
+- It seems like visitstarttime might be an `interval`. However, the entries of this column generally have more than six digits and so don't look like times at all. Without more information, I think it is best to leave this column as `text`.
+
+- All entries of the date column are strings of eight digits. Assuming these digits are formatted as 'YYYYMMDD', I set the date type of this column to `date`.
+
+- All entries of the column units_sold are either `null` or strings of digits or, in one case, '-89'. Regardless, I set this columns' data type to `integer`.
+
+- All entries in the userid column are `null`, so we leave the column's type as `text`.
+
+- All entries of the column timeonsite are either `null` or strings of digits. I would like to cast these entries as `interval`, but I don't know what the units of time should be. AS such, I left this column as `text`.
+
+- All entries of the columns revenue and unit_price are either `null` or strings of digits. Rather than type these coolumns as `integer`; however, I typed them as `numeric` as they appear to containmonetary values. 
+
+All columns not explicitly mentioned above were left as `text`. The above alterations were implemented with
+
+```sql
+/* Set column data types. */
+alter table if exists analytics
+	alter column visitnumber type integer using visitnumber::integer,
+	alter column units_sold type integer using units_sold::integer,
+	alter column pageviews type integer using pageviews::integer,
+	alter column bounces type integer using bounces::integer,
+	
+	alter column revenue type numeric using revenue::numeric,
+	alter column unit_price type numeric using unit_price::numeric,
+	
+	alter column date type date using to_date(date, 'YYYYMMDD');
+```
