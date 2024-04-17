@@ -2,10 +2,11 @@
 
 ## What issues will you address by cleaning the data?
 
-1. Set an appropriate data type for each column.
-2. Remove empty columns.
-3. Remove erroneous and/or duplicate data.
-4. Fix typos.
+1. Set an appropriate data type for each column
+2. Deduplication of rows
+3. Remove empty columns
+4. Remove erroneous and/or duplicate columns
+5. Fix typos
 
 ## Queries:
 
@@ -135,11 +136,11 @@ for example. Finally, the `ecommerce` database was backed up from the linux comm
 pg_dump -d ecommerce -F tar -f ecommerce-text.tar
 ``` 
 
-### Setting Data Types
+### 1. Setting Data Types
 
 #### The all_sessions Table
 
-- All entries of the columns transactions, pageviews, sessionqualitydim, productquantity, ecommerceaction_type, and ecommerceaction_step are either `null` or strings of digits. This was determined with a query like
+All entries of the columns transactions, pageviews, sessionqualitydim, productquantity, ecommerceaction_type, and ecommerceaction_step are either `null` or strings of digits. This was determined with a query like
 
 ```sql
 select count(*)
@@ -151,9 +152,9 @@ and transactions not similar to '[0-9]*';
 
 which returned a count of 0. As such, each of these columns was cast as `integer`. (Note that this sort of query is performed repeatedly in what follows. In such cases, I don't include the SQL code again.)
 
-- All entries of the columns totaltransactionrevenue, productprice, productrevenue, and transactionrevenue are also either `null` or strings of digits. However, I assumed that these columns contain monetary values. As such, I casted them as `numeric` rather than `integer`.
+All entries of the columns totaltransactionrevenue, productprice, productrevenue, and transactionrevenue are also either `null` or strings of digits. However, I assumed that these columns contain monetary values. As such, I casted them as `numeric` rather than `integer`.
 
-- Every entry in the date column is an eight-digit string as can be verifed with the query
+Every entry in the date column is an eight-digit string as can be verifed with the query
 
 ```sql
 select count(*)
@@ -163,7 +164,7 @@ where date not similar to '[0-9]{8}';
 
 which returns a value of 0. Therefore, I cast the date column as `date`, assuming that the format for each entry was 'YYYYMMDD'. (Note that this type of query is used again in what follows. In such cases, I don't include the SQL code again.)
 
-- All entries in the productrefundamount, itemquantity, itemrevenue, and searchkeyword columns are `null` as can be veried with something like the query
+All entries in the productrefundamount, itemquantity, itemrevenue, and searchkeyword columns are `null` as can be veried with something like the query
 
 ```sql
 select count(*)
@@ -171,11 +172,11 @@ from all_sessions
 where productrefundamount is not null;
 ```
 
-which gives 0. Therefore, for the time being, I left these columns typed as `text`. (Note that this type of query is used repeatedly in what follows. In such cases, I don't include the SQL code again.)
+which gives 0. Therefore, for the time being, I left these columns typed as `text`.
 
-- All entries of the time column are either `null` or a string of digits. Ideally, I would like to cast this column as `time`; however, I can't because it's not clear what the digits mean. There are three-, four-, and five-digit entries as well as many '0's. Without more information, I think it's best to leave this column as `text`. 
+All entries of the time column are either `null` or a string of digits. Ideally, I would like to cast this column as `time`; however, I can't because it's not clear what the digits mean. There are three-, four-, and five-digit entries as well as many '0's. Without more information, I think it's best to leave this column as `text`. 
 
-- Similarly, all entries of the timeonsite column are either `null` or a string of digits. Ideally, I would like to cast this column as `interval`; However, it's not clear what the unit of measurement is: seconds, minutes, something else? Again, without more information, I think it's best to leave this column as `text`.
+Similarly, all entries of the timeonsite column are either `null` or a string of digits. Ideally, I would like to cast this column as `interval`; However, it's not clear what the unit of measurement is: seconds, minutes, something else? Again, without more information, I think it's best to leave this column as `text`.
 
 For those columns not explicitly mentioned above, the data type was left as `text`.
 
@@ -202,19 +203,19 @@ alter table if exists all_sessions
 
 #### The analytics Table
 
-- All entries of the columns visitnumber, pageviews, bounces, are either `null` or strings of digits. Therefore, I set the data type of these columns as `integer`.
+All entries of the columns visitnumber, pageviews, bounces, are either `null` or strings of digits. Therefore, I set the data type of these columns as `integer`.
 
-- It seems like visitstarttime might be an `interval`. However, the entries of this column generally have more than six digits and so don't look like times at all. Without more information, I think it is best to leave this column as `text`.
+It seems like visitstarttime might be an `interval`. However, the entries of this column generally have more than six digits and so don't look like times at all. Without more information, I think it is best to leave this column as `text`.
 
-- All entries of the date column are strings of eight digits. Assuming these digits are formatted as 'YYYYMMDD', I set the date type of this column to `date`.
+All entries of the date column are strings of eight digits. Assuming these digits are formatted as 'YYYYMMDD', I set the date type of this column to `date`.
 
-- All entries of the column units_sold are either `null` or strings of digits or, in one case, '-89'. Regardless, I set this columns' data type to `integer`.
+All entries of the column units_sold are either `null` or strings of digits or, in one case, '-89'. Regardless, I set this columns' data type to `integer`.
 
-- All entries in the userid column are `null`, so we leave the column's type as `text`.
+All entries in the userid column are `null`, so we leave the column's type as `text`.
 
-- All entries of the column timeonsite are either `null` or strings of digits. I would like to cast these entries as `interval`, but I don't know what the units of time should be. As such, I left this column as `text`.
+All entries of the column timeonsite are either `null` or strings of digits. I would like to cast these entries as `interval`, but I don't know what the units of time should be. As such, I left this column as `text`.
 
-- All entries of the columns revenue and unit_price are either `null` or strings of digits. Rather than type these columns as `integer`, however, I typed them as `numeric` as they appear to contain monetary values. 
+All entries of the columns revenue and unit_price are either `null` or strings of digits. Rather than type these columns as `integer`, however, I typed them as `numeric` as they appear to contain monetary values. 
 
 All columns not explicitly mentioned above were left as `text`. The above alterations were implemented with
 
@@ -234,9 +235,9 @@ alter table if exists analytics
 
 #### The products Table
 
-- All entries of the columns orderedquantity, stocklevel, restockingleadtime are either `null` or strings of digits. As such, I typed all of these columns as `integer`.
+All entries of the columns orderedquantity, stocklevel, restockingleadtime are either `null` or strings of digits. As such, I typed all of these columns as `integer`.
 
-- All entries of the columns sentimentscore and sentimentscoremagnitude appear to resemble real numbers as can be deduced from the query
+All entries of the columns sentimentscore and sentimentscoremagnitude appear to resemble real numbers as can be deduced from the query
 
 ```sql
 select count(*)
@@ -262,9 +263,9 @@ alter table if exists products
 
  #### The sales_by_sku Table
 
-- I left the productsku column as `text`.
+I left the productsku column as `text`.
 
-- All entries of the total_ordered column are either `null` or a string of digits. As such, I set the type of this column to `integer` with
+All entries of the total_ordered column are either `null` or a string of digits. As such, I set the type of this column to `integer` with
 
 ```sql
 alter table if exists sales_by_sku
@@ -273,9 +274,9 @@ alter table if exists sales_by_sku
 
 #### The sales_report Table
 
-- All entries of the columns total_ordered, stocklevel, and restockingleadtime are either `null` or strings of integers. As such,  typed these columns as `integer`.
+All entries of the columns total_ordered, stocklevel, and restockingleadtime are either `null` or strings of integers. As such,  typed these columns as `integer`.
 
-- All entries of the columns sentimentscore, sentimentmagnitude, and ratio appear to be string representations of real numbers. As such, I typed these columns as `real`.
+All entries of the columns sentimentscore, sentimentmagnitude, and ratio appear to be string representations of real numbers. As such, I typed these columns as `real`.
 
 Any column not mentioned above was left as `text`. The type changes dscribed above were implemented with
 
@@ -291,7 +292,7 @@ alter table if exists sales_report
 	alter column ratio type real using ratio::real;
 ```
 
-### Identifying Primary Keys
+### 2. Deduplication
 
 #### The all_sessions Table
 
@@ -346,7 +347,7 @@ select count(distinct sku)
 from products; -- counts 1092 rows
 ```
 
-### Dropping Empty Columns
+### 3. Dropping Empty Columns
 
 As noted above, all entries in the productrefundamount, itemquantity, itemrevenue, and searchkeyword columns are `null`, so it is safe to drop the columns with 
 
@@ -358,7 +359,7 @@ alter table if exists all_sessions
 	drop column searchkeyword;
 ```
 
-### Removing Duplicate or Erroneous Data
+### 4. Removing Erroneous Data or Duplicate Columns
 
 By running,
 
@@ -429,4 +430,43 @@ from (
 which showed that products and the union or products and sales_report (restricted to the columns indicated in the script above) had the same number of rows. Thus, I dropped the redundant rows from sales_report with
 
 ```sql
+alter table if exists sales_report
+	drop column name, 
+	drop column stocklevel, 
+	drop column restockingleadtime, 
+	drop column sentimentscore, 
+	drop column sentimentmagnitude;
 ```
+
+Next, looking through the all_sessions table, there are four columns whose entries are too large by a factor of 1,000,000. I scaled down these entries with
+
+```sql
+update all_sessions
+set totaltransactionrevenue = totaltransactionrevenue / 1000000,
+	productrevenue = productrevenue / 1000000,
+	productprice = productprice / 1000000;
+```
+
+Similarly, I scaled down analytics.unit_price by a factor of 1,000,000.
+
+### 5. Fixing Typos
+
+In the all_sessions table, there are entries in the country and/or city column of '(not set)' or 'not available in this data set'. I set this to null with
+
+```sql
+update all_sessions
+set country = null
+where country = '(not set)';
+
+update all_sessions
+set city = null
+where city in ('(not set)', 'not available in this demo dataset');
+```
+
+Finally, I found one row in the analytics table where units_sold was negative, *i.e.,* -89. This can't be correct, so I deleted the row with
+
+```sql
+delete from analytics
+where units_sold < 0;
+```
+
