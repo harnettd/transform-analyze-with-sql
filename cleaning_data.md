@@ -2,8 +2,10 @@
 
 ## What issues will you address by cleaning the data?
 
-1. Set an appropriate data type for each column of each table.
-
+1. Set an appropriate data type for each column.
+2. Remove empty columns.
+3. Remove erroneous and/or duplicate data.
+4. Fix typos.
 
 ## Queries:
 
@@ -109,7 +111,7 @@ create table sales_by_sku (
 
 ```
 
-Importing data was done using pgAdmin4. Once all data was successfully imported, the number of rows imported per table was determined with
+Importing data was done using DBeaver. Once all data was successfully imported, the number of rows imported per table was determined with
 
 ```sql
 /* Count the number of rows in each table of the ecommerce database. */
@@ -243,7 +245,7 @@ where sentimentscore is not null
 and sentimentscore not similar to '-?[0-9]*.[0-9]*';
 ```
 
-for example, which yields zero. Tus, I typed these two columns as `real`. (This type of query is used again below. In such cases, I omit the SQL code.)
+for example, which yields zero. Thus, I typed these two columns as `real`. (This type of query is used again below. In such cases, I omit the SQL code.)
 
 All columns not explicitly discussed above were left as `text`. The indicated alterations were implemented with
 
@@ -289,3 +291,142 @@ alter table if exists sales_report
 	alter column ratio type real using ratio::real;
 ```
 
+### Identifying Primary Keys
+
+#### The all_sessions Table
+
+The column `visitid` seems like a promising choice for this table's primary key. Comparing the number of columns in the table with 
+
+```sql
+select count(*)
+from all_sessions;
+```
+
+to the number of rows with a distinct `visitid` determined with
+
+```sql
+select count(distinct visitid)
+from all_sessions; 
+```
+
+I found that there are 15,134 total rows in the table and 14,556 distinct `visitid` values. So, there's a discrepancy. Trying to form a compound key by combining `visitid` with another column doesn't help. Therefore, *I proceeded on the assumption that `visitid` was intended to be a primary key, and that 3.8% of the records of the all_sessions table contain incorrect data.*
+
+#### The analytics Table
+
+This table caused a great deal of confusion for me as there are many duplicate rows. The table has 4,310,122 rows but only 1,739,308 unique rows as determined from
+
+```sql
+select count(*) as row_count
+	from (
+	select a.visitnumber, a.visitid, a.visitstarttime, 
+		a.date, a.fullvisitorid, a.userid,
+		a.channelgrouping, a.socialengagementtype, a.units_sold,
+		a.pageviews, a.timeonsite, a.bounces, a.revenue, 
+		a.unit_price
+	from analytics as a
+	group by a.visitnumber, a.visitid, a.visitstarttime,	
+		a.date, a.fullvisitorid, a.userid,
+		a.channelgrouping, a.socialengagementtype, a.units_sold,
+		a.pageviews, a.timeonsite, a.bounces, a.revenue, 
+		a.unit_price
+) as distinct_groups; 
+```
+
+This would seem to imply that deduplication is in order. However, the data of the `visitstarttime` column looks like it has been overwritten by the `visitid` column. Perhaps the `visitstarttime` column was intended to provide timestamps to user interactions within a particular visit such that `visitid` and `visitstarttime` together comprised a compound primary key. It's impossible for me to say. Anyhow, *I proceeded on the assumption that each row of the analytics table indeed represents a unique record and, hence, all rows must be kept.* 
+
+#### The products Table
+
+The `sku` column serves as a primary key for the products table as can be seen by running:
+
+```sql
+select count(*)
+from products; -- counts 1092 rows
+
+select count(distinct sku)
+from products; -- counts 1092 rows
+```
+
+### Dropping Empty Columns
+
+As noted above, all entries in the productrefundamount, itemquantity, itemrevenue, and searchkeyword columns are `null`, so it is safe to drop the columns with 
+
+```sql
+alter table if exists all_sessions
+	drop column productrefundamount,
+	drop column itemquantity,
+	drop column itemrevenue,
+	drop column searchkeyword;
+```
+
+### Removing Duplicate or Erroneous Data
+
+By running,
+
+```sql
+select 
+	count(*) as num_rows,
+	count(distinct sku) as distinct_sku
+from products;
+```
+
+we conclude that every row of products has a unique sku. Therefore, sku can serve as the primary key for products.
+
+In both the sales_report and sales_by_sku tables, it looks as if productsku is a foreign key related to the primary key sku from products. To see if this is the case, I checked to see if there were any entries of sales_report.productsku that were not in products.sku using
+
+```sql
+select productsku
+from sales_report
+where productsku not in (
+	select distinct sku 
+	from products
+);
+```
+
+which yielded a null result. Therefore, sales_report.productsku is a good foreign key. However, an analogous query of sales_by_sku found eight entries of sales_by_sku.productsku that were not entries of products.sku. (For reference, sales_by_sku contains 462 rows). Thus, I decided to delete the rows containing these eight entires with
+
+```sql
+delete from sales_by_sku
+where productsku not in (
+	select distinct sku 
+	from products
+);
+```
+
+Afterwards, the data contained in sales_by_sku became redundant as both of the table's columns are also columns of sales_report. To ensure that there was no information in sales_by_sku that wasn't in already in sales_report, I ran
+
+```sql
+select count(*) from sales_report;
+
+select productsku, total_ordered from sales_report 
+union
+select * from sales_by_sku;
+```
+
+which, together, showed that sales_report and the union of (the first two rows of) sales_report and sales_by_sku have the same number of rows, *i.e.,* sales_by_sku provided no new data. Hence, I deleted sales_by_sku with 
+
+```sql
+drop table if exists sales_by_sku;
+```
+
+There was a similar redundancy between the products and the sales_report tables as several columns seemed to be the same. To confirm this, I ran
+
+```sql
+select count(*) from products;
+
+select count(*) 
+from (
+	select
+		sku, name, stocklevel, restockingleadtime, sentimentscore, sentimentmagnitude
+	from products
+	union
+	select
+		productsku, name, stocklevel, restockingleadtime, sentimentscore, sentimentmagnitude
+	from sales_report
+) as unioned
+;
+```
+
+which showed that products and the union or products and sales_report (restricted to the columns indicated in the script above) had the same number of rows. Thus, I dropped the redundant rows from sales_report with
+
+```sql
+```

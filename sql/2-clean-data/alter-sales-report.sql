@@ -1,4 +1,4 @@
-/* Update data types of the sales_report table. */
+/* Update the sales_report table. */
 
 
 /* Set column data types. */
@@ -10,4 +10,12 @@ alter table if exists sales_report
 	alter column sentimentscore type real using sentimentscore::real,
 	alter column sentimentmagnitude type real using sentimentmagnitude::real,
 	alter column ratio type real using ratio::real;
-	
+
+
+/* Drop redundant columns */
+alter table if exists sales_report
+	drop column name, 
+	drop column stocklevel, 
+	drop column restockingleadtime, 
+	drop column sentimentscore, 
+	drop column sentimentmagnitude;
