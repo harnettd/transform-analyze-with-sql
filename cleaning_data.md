@@ -136,7 +136,7 @@ for example. Finally, the `ecommerce` database was backed up from the linux comm
 pg_dump -d ecommerce -F tar -f ecommerce-text.tar
 ``` 
 
-### 1. Setting Data Types
+### Setting Data Types
 
 #### The all_sessions Table
 
@@ -147,7 +147,6 @@ select count(*)
 from all_sessions
 where transactions is not null
 and transactions not similar to '[0-9]*';
-
 ```
 
 which returned a count of 0. As such, each of these columns was cast as `integer`. (Note that this sort of query is performed repeatedly in what follows. In such cases, I don't include the SQL code again.)
@@ -310,7 +309,7 @@ select count(distinct visitid)
 from all_sessions; 
 ```
 
-I found that there are 15,134 total rows in the table and 14,556 distinct `visitid` values. So, there's a discrepancy. Trying to form a compound key by combining `visitid` with another column doesn't help. Therefore, *I proceeded on the assumption that `visitid` was intended to be a primary key, and that 3.8% of the records of the all_sessions table contain incorrect data.*
+I found that there are 15,134 total rows in the table and 14,556 distinct `visitid` values. So, there's a discrepancy. Trying to form a compound key by combining `visitid` with another column doesn't help. Therefore, **I proceeded on the assumption that `visitid` was intended to be a primary key, and that 3.8% of the records of the all_sessions table contain incorrect data.**
 
 #### The analytics Table
 
@@ -333,7 +332,7 @@ select count(*) as row_count
 ) as distinct_groups; 
 ```
 
-This would seem to imply that deduplication is in order. However, the data of the `visitstarttime` column looks like it has been overwritten by the `visitid` column. Perhaps the `visitstarttime` column was intended to provide timestamps to user interactions within a particular visit such that `visitid` and `visitstarttime` together comprised a compound primary key. It's impossible for me to say. Anyhow, *I proceeded on the assumption that each row of the analytics table indeed represents a unique record and, hence, all rows must be kept.* 
+This would seem to imply that deduplication is in order. However, the data of the `visitstarttime` column looks like it has been overwritten by the `visitid` column. Perhaps the `visitstarttime` column was intended to provide timestamps to user interactions within a particular visit such that `visitid` and `visitstarttime` together comprised a compound primary key. It's impossible for me to say. Anyhow, **I proceeded on the assumption that each row of the analytics table indeed represents a unique record and, hence, all rows must be kept.**
 
 #### The products Table
 
@@ -383,7 +382,7 @@ where productsku not in (
 );
 ```
 
-which yielded a null result. Therefore, sales_report.productsku is a good foreign key. However, an analogous query of sales_by_sku found eight entries of sales_by_sku.productsku that were not entries of products.sku. (For reference, sales_by_sku contains 462 rows). Thus, I decided to delete the rows containing these eight entires with
+which yielded a null result. Therefore, sales_report.productsku is a good foreign key. However, an analogous query of sales_by_sku found eight entries of sales_by_sku.productsku that were not entries of products.sku. (For reference, sales_by_sku contains 462 rows). Thus, **I decided to delete the rows containing these eight entires** with
 
 ```sql
 delete from sales_by_sku
@@ -427,7 +426,7 @@ from (
 ;
 ```
 
-which showed that products and the union or products and sales_report (restricted to the columns indicated in the script above) had the same number of rows. Thus, I dropped the redundant rows from sales_report with
+which showed that products and the union of products and sales_report (restricted to the columns indicated in the script above) had the same number of rows. Thus, I dropped the redundant rows from sales_report with
 
 ```sql
 alter table if exists sales_report
@@ -451,7 +450,7 @@ Similarly, I scaled down analytics.unit_price by a factor of 1,000,000.
 
 ### 5. Fixing Typos
 
-In the all_sessions table, there are entries in the country and/or city column of '(not set)' or 'not available in this data set'. I set this to null with
+In the all_sessions table, there are entries in the country and/or city column of '(not set)' or 'not available in this demo dataset'. I set these to null with
 
 ```sql
 update all_sessions
