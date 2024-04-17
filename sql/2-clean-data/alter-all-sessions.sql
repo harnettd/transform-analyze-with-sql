@@ -24,3 +24,18 @@ alter table if exists all_sessions
 	drop column itemquantity,
 	drop column itemrevenue,
 	drop column searchkeyword;
+
+/* Scale down all monetary values by 1,000,000. */
+update all_sessions
+set totaltransactionrevenue = totaltransactionrevenue / 1000000,
+	productrevenue = productrevenue / 1000000,
+	productprice = productprice / 1000000;
+
+/* Set some equivalent null value to null. */
+update all_sessions
+set country = null
+where country = '(not set)';
+
+update all_sessions
+set city = null
+where city in ('(not set)', 'not available in demo dataset');
