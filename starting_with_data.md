@@ -127,9 +127,3 @@ order by
 Answer:
 
 By executing the above SQL script, I found that, regardless of whether a visitor made a purchase, Organic Search and Referral comprised ~75% of the (non-null) entries in the `channelgrouping` column. For visitors who did make a purchase, Referral was the channel grouping ~50% of the time while Organic Search was the channel grouping ~25% of the time. Interestingly enough, for visitors who did not make a purchase, these values swapped places: ~50% of the time, Organic Search was the channel grouping while ~25% of the time, Referral was the channel grouping.
-
-Question 5: 
-
-SQL Queries:
-
-Answer:
